@@ -1,0 +1,55 @@
+[
+  {
+    "name": "认证",
+    "path": "/auth",
+    "key": "auth"
+  },
+  {
+    "name": "服务入口",
+    "path": "/",
+    "key": "index"
+  },
+  {
+    "key": "test",
+    "name": "测试接口",
+    "children": [
+      {
+        "name": "测试get",
+        "path": "/test",
+        "params": {},
+        "key": "get"
+      },
+      {
+        "name": "测试post",
+        "path": "/test",
+        "method": "post",
+        "params": {
+          "id": {
+            "required": true,
+            "type": "string",
+            "tip": "这个地址栏拼接参数"
+          }
+        },
+        "body": {
+          "name": {
+            "required": true,
+            "type": "string"
+          }
+        },
+        "key": "post"
+      }
+    ]
+  },
+  {
+    "key": "user",
+    "name": "用户接口",
+    "children": [
+      {
+        "name": "登录",
+        "path": "/login",
+        "method": "post",
+        "key": "login"
+      }
+    ]
+  }
+]
