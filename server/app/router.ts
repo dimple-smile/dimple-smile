@@ -4,6 +4,12 @@ import getApiList from './utils/getApiList'
 
 export default (app: Application) => {
   const { router } = app
+
+  // pg动态同步表结构
+  // app.beforeStart(async () => {
+  //   await app.model.sync({ force: true }) //force  false 为不覆盖 true会删除再创建; alter true可以 添加或删除字段;
+  // })
+
   const apiList = getApiList(path.resolve(__dirname, './service'), true)
   const generateRouter = (list: any[]) => {
     for (const item of list) {

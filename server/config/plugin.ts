@@ -14,6 +14,14 @@ const plugin: EggPlugin = {
     enable: true,
     package: 'egg-websocket-plugin',
   },
+  // sequelize: {
+  //   enable: true,
+  //   package: 'egg-sequelize',
+  // },
+  mongoose: {
+    enable: true,
+    package: 'egg-mongoose',
+  },
 }
 
 export default plugin

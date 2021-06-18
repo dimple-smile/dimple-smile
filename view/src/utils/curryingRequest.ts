@@ -25,7 +25,7 @@ function curryingRequest(method: IMethod): (url: string, config?: AxiosRequestCo
   }
 }
 
-curryingRequest.axios = axios
+curryingRequest.axios = axios.create()
 curryingRequest.get = curryingRequest('get')
 curryingRequest.post = curryingRequest('post')
 curryingRequest.put = curryingRequest('put')

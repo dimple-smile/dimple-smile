@@ -23,13 +23,7 @@
         "name": "测试post",
         "path": "/test",
         "method": "post",
-        "params": {
-          "id": {
-            "required": true,
-            "type": "string",
-            "tip": "这个地址栏拼接参数"
-          }
-        },
+        "params": {},
         "body": {
           "name": {
             "required": true,

@@ -25,16 +25,15 @@ const getToken = async (url: string | undefined) => {
   const expirationAt = Number(localStorage.getItem(expirationAtKey)) || new Date()
   if (expirationAt > new Date().getTime()) return localStorage.getItem(accessTokenKey)
   try {
-    const res = await axios({
-      baseURL,
-      method: 'post',
-      url: authenticationUrl,
-      data: {
+    const res = await axios.post(
+      authenticationUrl,
+      {
         grant_type: 'refresh_token',
         access_token: localStorage.getItem(accessTokenKey),
         refresh_token: localStorage.getItem(refreshTokenKey),
       },
-    })
+      { baseURL }
+    )
     const data = (res && res.data) || {}
     setToken(data)
     return data.access_token
@@ -68,11 +67,12 @@ const onRequest = async (config: AxiosRequestConfig) => {
 
 // 响应拦截器
 const onSuccess = (res: AxiosResponse) => {
-  return res.data
+  const { data } = res
+  return data
 }
 
 // 错误拦截器
-const onError = (error: any, onCustomRejected?: (error: any) => any) => {
+const onError = (error: any) => {
   destroyLoading()
   // 1. http 状态码非2开头（没有额外定义 validateStatus）的都会进来这里，如 404, 500 等
   // 2. 取消请求也会进入这里，可以用 axios.isCancel(error) 来判断是否是取消请求，error 的数据结构如下：cancel-error
@@ -94,12 +94,11 @@ const onError = (error: any, onCustomRejected?: (error: any) => any) => {
     // 请求被取消或者发送请求时异常，对应上面的 2 & 3
     console.info('error', error.message)
   }
-  if (onCustomRejected) onCustomRejected(error)
 
   return Promise.reject(error)
 }
 // 添加请求拦截器
-curryingRequest.axios.interceptors.request.use(onRequest, error => Promise.reject(error))
+curryingRequest.axios.interceptors.request.use(onRequest, (error) => Promise.reject(error))
 // 添加响应拦截器
 curryingRequest.axios.interceptors.response.use(onSuccess, onError)
 
