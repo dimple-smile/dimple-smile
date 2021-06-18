@@ -1,9 +1,0 @@
-org: dimple-smile
-app: dimple-smile
-stage: dev
-component: mongodb
-name: dimple-smile-mongodb
-
-inputs:
-  name: dimple-smile-mongodb
-  extranetAccess: true # 是否开启外网访问

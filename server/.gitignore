@@ -19,4 +19,4 @@ config/**/*.js
 app/**/*.map
 test/**/*.map
 config/**/*.map
-config/config.prod.ts
+# config/config.prod.ts
