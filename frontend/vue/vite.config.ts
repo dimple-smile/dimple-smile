@@ -7,6 +7,9 @@ import * as path from 'path'
 // https://vitejs.dev/config/
 export default defineConfig({
   base: '/spa/vue/',
+  build: {
+    outDir: path.resolve(process.cwd(), '../../dist/frontend/vue'),
+  },
   plugins: [
     vue(),
     createSvgIconsPlugin({

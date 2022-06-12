@@ -1,5 +1,7 @@
 'use strict'
 
+require('dotenv').config()
+
 // 引入 Fastify 框架
 const Fastify = require('fastify')
 
@@ -7,7 +9,7 @@ const Fastify = require('fastify')
 const app = Fastify({ logger: true })
 
 // 将应用注册为一个常规插件
-app.register(require('../dist/main').default)
+app.register(require('../src/main').default)
 
 const main = async (req, res) => {
   await app.ready()
