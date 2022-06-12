@@ -1,18 +1,18 @@
 'use strict'
 
-// Read the .env file.
+// 读取 .env 文件
 import * as dotenv from 'dotenv'
 dotenv.config()
 
-// Require the framework
+// 引入 Fastify 框架
 import Fastify from 'fastify'
 
-// Instantiate Fastify with some config
+// 实例化 Fastify
 const app = Fastify({
   logger: true,
 })
 
-// Register your application as a normal plugin.
+// 将应用注册为一个常规插件
 app.register(import('../dist/main'))
 
 export default async (req, res) => {
