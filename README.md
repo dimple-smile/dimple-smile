@@ -14,3 +14,14 @@ Here are some ideas to get you started:
 - 😄 Pronouns: ...
 - ⚡ Fun fact: ...
 -->
+# 创建一个web服务
+
+```
+$ mkdir servers
+
+$ cd servers
+
+$ npm install fastify-cli --global
+
+$ fastify generate --lang=ts fastify
+```
