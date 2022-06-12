@@ -1,21 +1,18 @@
 'use strict'
 
-// 读取 .env 文件
-import * as dotenv from 'dotenv'
-dotenv.config()
-
 // 引入 Fastify 框架
-import Fastify from 'fastify'
+const Fastify = require('fastify')
 
 // 实例化 Fastify
-const app = Fastify({
-  logger: true,
-})
+const app = Fastify({ logger: true })
 
 // 将应用注册为一个常规插件
-app.register(import('../dist/main'))
+app.register(require('../dist/main').default)
 
-export default async (req, res) => {
+const main = async (req, res) => {
   await app.ready()
   app.server.emit('request', req, res)
 }
+
+exports.default = main
+module.exports = main
