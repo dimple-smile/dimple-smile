@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true
+  },
+  "include": ["packages/**/*.ts", "packages/**/*.tsx", "packages/**/*.vue"]
+}

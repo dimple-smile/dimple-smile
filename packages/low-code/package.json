@@ -1,0 +1,21 @@
+{
+  "name": "@dimple-smile/low-code",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "./packages/index.ts",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc -b && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "vue": "^3.5.13",
+    "@dimple-smile/low-code": "workspace:*"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.1",
+    "typescript": "~5.6.2",
+    "vite": "^6.0.1",
+    "vue-tsc": "^2.1.10"
+  }
+}

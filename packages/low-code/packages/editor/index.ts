@@ -1,0 +1,3 @@
+const createEditor = () => {}
+
+export { createEditor }
