@@ -1,19 +1,7 @@
 import { ref, watch } from 'vue'
 import mitt from 'mitt'
 import { bus } from '@dimple-smile/mframe'
-
-type IframeConfig = {
-  /** 子应用来源（协议、主机、端口） */
-  origin: string
-
-  /** 子应用路由激活的规则，唯一规则（注意不要和其他应用存在包含关系）。支持如 /app1/* 这种glob语法 */
-  activeRule: string
-
-  /** 作为子应用时，是否自动清除html、body、挂载点的背景颜色。默认清除，防止子应用的背景颜色覆盖主应用，但是会自动继到可用的布局容器中 */
-  autoClearBackground?: Boolean
-
-  tiemout?: number
-}
+import type { MicroAppContainerInitOptions } from '../bus/container/type';
 
 enum LifeCycleKey {
   'registered',
@@ -25,8 +13,9 @@ enum LifeCycleKey {
   'destroy',
   'error',
 }
+type LifeCycleKeyType = keyof typeof LifeCycleKey
 
-const LifeCycle: { [key in keyof typeof LifeCycleKey]: any } = {
+const LifeCycle: { [key in LifeCycleKeyType]: any } = {
   registered: 'registered',
   loading: 'loading',
   mounted: 'mounted',
@@ -38,15 +27,15 @@ const LifeCycle: { [key in keyof typeof LifeCycleKey]: any } = {
 }
 let mountDom = ref<Element | null>(null)
 
-const useIframeManager = (opt?: any) => {
+const useIframeManager = () => {
   const containerBus = bus('container')
 
   const iframes = new Map()
   const event = mitt<{
     /** 容器组件onMounted生命周期 */
-    [key in keyof typeof LifeCycleKey]: any
+    [key in LifeCycleKeyType]: any
   }>()
-  const hide = (iframeId?: string) => {
+  const hideIframe = (iframeId?: string) => {
     const iframeItem = Array.from(iframes).find(([id, item]) => {
       if (iframeId) return iframeId === id
       if (!item.element) return
@@ -60,7 +49,7 @@ const useIframeManager = (opt?: any) => {
     event.emit(LifeCycle.deactivated, iframeInfo)
   }
 
-  const load = async (id: string, opt?: any) => {
+  const loadIframe = async (id: string, opt?: any) => {
     if (!mountDom.value) await new Promise((res) => watch(() => mountDom.value, res))
     const iframeInfo = iframes.get(id)
     if (!iframeInfo) return
@@ -68,17 +57,16 @@ const useIframeManager = (opt?: any) => {
     Array.from(iframes)
       .map((item) => item[1])
       .filter((item) => item.id !== id)
-      .map((item) => hide(item.id))
-    if (iframeInfo.status === LifeCycle.mounted && getComputedStyle(iframeInfo.element).display === 'block') {
-      iframeInfo.status = LifeCycle.loading
+      .map((item) => hideIframe(item.id))
+    if (iframeInfo.element && getComputedStyle(iframeInfo.element).display !== 'block') {
       iframeInfo.element.style.display = 'block'
       iframeInfo.status = LifeCycle.activated
       event.emit(LifeCycle.activated, iframeInfo)
-      await new Promise((res) => setTimeout(res, 300))
+      await new Promise((res) => setTimeout(res, 0))
       return
     }
 
-    iframeInfo.status = 'loading'
+    iframeInfo.status = LifeCycle.loading
     event.emit(LifeCycle.activated, iframeInfo)
     const iframe = document.createElement('iframe')
     let src = iframeInfo.config.origin
@@ -103,7 +91,7 @@ const useIframeManager = (opt?: any) => {
       iframe.onerror = () => resolve([new Error(`${id} IFrame load failed`), null])
     })
     if (error) {
-      iframeInfo.status = 'error'
+      iframeInfo.status = LifeCycle.error
       event.emit(LifeCycle.error, iframeInfo)
       return
     }
@@ -116,10 +104,10 @@ const useIframeManager = (opt?: any) => {
   }
 
   return {
-    setMountDom: (ele: Element | null) => {
+    setIframeMountDom: (ele: Element | null) => {
       mountDom.value = ele
     },
-    register: (id: string, config: IframeConfig) => {
+    registerIframe: (id: string, config: MicroAppContainerInitOptions) => {
       const iframeInfo = {
         id,
         config,
@@ -128,12 +116,15 @@ const useIframeManager = (opt?: any) => {
       }
       iframes.set(id, iframeInfo)
     },
-    get: (id: string) => iframes.get(id),
-    checkStatus: (id: string, status: keyof typeof LifeCycleKey) => iframes.get(id).status === status,
-    event,
-    load,
-    hide,
-    destroy: (id: string) => {
+    getIframeInfo: (id: string) => iframes.get(id),
+    checkIframeStatus: (id: string, status: LifeCycleKeyType | LifeCycleKeyType[]) => {
+      if (Array.isArray(status)) return status.includes(iframes.get(id).status)
+      return iframes.get(id).status === status
+    },
+    iframeEvent:event,
+    loadIframe,
+    hideIframe,
+    destroyIframe: (id: string) => {
       const iframeInfo = iframes.get(id)
       if (!iframeInfo) return
       iframeInfo.element.remove()

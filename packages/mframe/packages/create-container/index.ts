@@ -1,6 +1,6 @@
 import { h, render } from 'vue'
 import { bus } from '@dimple-smile/mframe'
-import Container from './components/container.vue'
+import Container from './container.vue'
 
 import type { ContainerInitOptions } from '../bus/container/type'
 

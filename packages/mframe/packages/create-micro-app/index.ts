@@ -46,8 +46,7 @@ const createMicroApp = (opt?: MicroAppContainerInitOptions) => {
   if (!opt) opt = {}
 
   const containerRes = createContainer({ type: 'microApp', ...opt })
-  const needAutoSyncRouter = opt.router?.sync ?? true
-  if (needAutoSyncRouter) autoSyncRouter(opt)
+  autoSyncRouter()
   return { ...containerRes }
 }
 

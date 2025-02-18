@@ -16,28 +16,32 @@ const createMainApp = (opt?: MainAppContainerInitOptions) => {
   const microAppsData = ref(microApps)
   containerBus.data.watch((newData) => (microAppsData.value = newData.microApps), ['microApps'])
   containerBus.data.set({ microApps })
-  const { register, load, hide, event, checkStatus } = useIframeManager()
-  event.on('mounted', (e) => mainAppBus.expose.connectMicroApp(e))
+  const { registerIframe, loadIframe, hideIframe, iframeEvent, checkIframeStatus } = useIframeManager()
+  iframeEvent.on('mounted', (e) => mainAppBus.expose.connectMicroApp(e))
 
   microApps
     .filter((item: any) => item.activeRule)
     .map((item: any) => {
       router.on(item.activeRule, () => {})
-      register(item.name, item)
+      registerIframe(item.name, item)
     })
 
+  const onReportRouterLoaidng = ref(false)
   mainAppBus.cors.on('reportRouter', (e: any) => {
     mainAppBus.event.emit('reportRouter', e)
     const { data } = e || {}
     if (!data.appInfo) return
     const microAppItem = containerBus.data.get().microApps.find((item) => item.name === data.appInfo.name)
     if (!microAppItem) return
-    if (!microAppItem.status?.activated) return
+    if (!checkIframeStatus(microAppItem.name, ['mounted', 'activated'])) return
     const { pathname, hash, search } = new URL(window.location.href)
     let currentPath = pathname + search
     if (containerBus.data.get().initOptions.router?.mode === 'hash') currentPath = hash.replace('#', '')
     if (currentPath === data.path) return
-    console.log(microAppItem.name)
+    onReportRouterLoaidng.value = true
+    setTimeout(() => {
+      onReportRouterLoaidng.value = false
+    }, 300)
     replaceState(data.path)
   })
 
@@ -54,6 +58,7 @@ const createMainApp = (opt?: MainAppContainerInitOptions) => {
   }
 
   const handleReplaceState = async () => {
+    if (onReportRouterLoaidng.value) return
     await new Promise((res) => setTimeout(res, 0))
     const mainAppRouterMode = containerBus.data.get().initOptions.router?.mode || 'history'
     const { pathname, hash, search } = new URL(window.location.href)
@@ -70,24 +75,24 @@ const createMainApp = (opt?: MainAppContainerInitOptions) => {
 
     if (!matchMicroAppItem) {
       containerBus.data.set({ activeMicroAppName: '' })
-      hide()
+      hideIframe()
       return
     }
 
     containerBus.data.set({ activeMicroAppName: matchMicroAppItem.name })
     const parentRouter = { href: window.location.href, mode: mainAppRouterMode, path }
 
-    if (checkStatus(matchMicroAppItem.name, 'deactivated')) {
-      await load(matchMicroAppItem.name)
+    if (checkIframeStatus(matchMicroAppItem.name, 'deactivated')) {
+      await loadIframe(matchMicroAppItem.name)
       syncRouterToMicroApp(matchMicroAppItem, parentRouter)
     }
 
-    if (checkStatus(matchMicroAppItem.name, 'mounted') || checkStatus(matchMicroAppItem.name, 'activated')) {
+    if (checkIframeStatus(matchMicroAppItem.name, ['mounted', 'activated'])) {
       syncRouterToMicroApp(matchMicroAppItem, parentRouter)
     }
 
-    if (checkStatus(matchMicroAppItem.name, 'registered')) {
-      await load(matchMicroAppItem.name, { path: replacePath })
+    if (checkIframeStatus(matchMicroAppItem.name, 'registered')) {
+      await loadIframe(matchMicroAppItem.name, { path: replacePath })
     }
   }
 

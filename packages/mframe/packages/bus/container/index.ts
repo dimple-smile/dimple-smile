@@ -95,12 +95,6 @@ type Event = {
 
   /** 展开收起图标的点击事件 */
   collapseClick: any
-
-  /** 子应用的加载事件 */
-  microAppLoad: any
-
-  /** 子应用从隐藏到显示的状态变化事件 */
-  microAppShow: any
 }
 
 const channelItemData = generateChannelData<typeof channelData>(channelName, channelData)
@@ -123,35 +117,6 @@ const channelItem = {
         'tabRect',
         'mountRect',
       ]
-    },
-    /** 设置子应用的状态 */
-    setMicroAppStatus: (microAppName: string, statusKey: keyof MicroAppStatus, statusValue: boolean) => {
-      const microApps = channelItemData.get().microApps
-      const microAppItemIndex = microApps.findIndex((item) => item.name === microAppName)
-      if (microAppItemIndex < 0) return
-      if (!microApps[microAppItemIndex].status) microApps[microAppItemIndex].status = {}
-      microApps[microAppItemIndex].status[statusKey] = statusValue
-      channelItemData.set({ microApps })
-    },
-    /** 获取子应用的状态 */
-    getMicroAppStatus: (microAppName: string) => {
-      return channelItemData.get().microApps.find((item) => item.name === microAppName)?.status
-    },
-    /** 子应用加载完成的promise，子应用加载过程是异步，可以使用此函数等待子应用加载完成 */
-    asyncMicroAppMounted: async (microAppName: string) => {
-      const microAppItem = channelItemData.get().microApps.find((item) => item.name === microAppName)
-      if (!microAppItem) return
-      if (microAppItem.status?.mounted) return microAppItem
-      await new Promise((resolve) => {
-        channelItemData.watch(
-          (newData) => {
-            const newMicroAppItem = newData.microApps.find((item) => item.name === microAppName)
-            if (newMicroAppItem?.status?.mounted) resolve(microAppItem)
-          },
-          ['microApps'],
-        )
-      })
-      return microAppItem
     },
   },
 }

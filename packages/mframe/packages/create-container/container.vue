@@ -43,22 +43,16 @@
     </section>
 
     <template v-if="isMainApp && microApps.length">
-      <div
-        ref="microAppContainerRef"
-        name="mframe-micro-app-container"
-        :style="microAppsContainerStyle"
-      >
-        <!-- <MicroAppsComponet></MicroAppsComponet> -->
-      </div>
+      <div ref="microAppContainerRef" name="mframe-micro-app-container" :style="microAppsContainerStyle"></div>
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
-import type { CSSProperties } from 'vue'
-
 import { bus, useIframeManager } from '@dimple-smile/mframe'
+
+import type { CSSProperties } from 'vue'
 
 const props = defineProps([
   'type',
@@ -235,7 +229,8 @@ if (isMainApp.value) {
     containerBus.data.set({ microAppStickStatus: e.data })
   })
 
-  watch(() => microAppContainerRef.value, useIframeManager().setMountDom)
+  const { setIframeMountDom } = useIframeManager()
+  watch(() => microAppContainerRef.value, setIframeMountDom)
 }
 
 if (isMicroApp.value) {

@@ -48,9 +48,6 @@ export type MicroAppItem = {
 
   /** 路由配置 */
   router?: RouterConfig
-
-  /** 子应用状态 */
-  status?: MicroAppStatus
 }
 
 /** 容器的初始化配置 */
