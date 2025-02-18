@@ -77,9 +77,6 @@ const createMainApp = (opt?: MainAppContainerInitOptions) => {
     containerBus.data.set({ activeMicroAppName: matchMicroAppItem.name })
     const parentRouter = { href: window.location.href, mode: mainAppRouterMode, path }
 
-
-    console.log(object);
-
     if (checkStatus(matchMicroAppItem.name, 'deactivated')) {
       await load(matchMicroAppItem.name)
       syncRouterToMicroApp(matchMicroAppItem, parentRouter)
