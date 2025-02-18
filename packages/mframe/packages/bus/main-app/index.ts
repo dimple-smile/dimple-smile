@@ -1,19 +1,20 @@
 import { reactive } from 'vue'
-import postRobot from 'post-robot'
+import * as postRobot from 'post-robot'
 import mitt from 'mitt'
 import { generateChannelData } from '../generator'
 
 type ParentListener = 'getMicroFrameRect' | 'reportRouter' | 'microAppStickStatus'
-type ChildernListener = 'containerConfigChang' | 'containerDataChang' | 'syncRouter'
+type ChildernListener = 'layoutDataChange' | 'syncRouter'
 
 type Event = {
   /** 子应用上报路由信息事件 */
   reportRouter: any
 }
 
+type microAppsDataItem = { name: string; contentWindow: Window; [key: string]: any }
 
-const microAppsData: { name: string; contentWindow: Window; origin: string }[] = []
-const connectMicroApp = async (opt: { name: string; contentWindow: Window; origin: string }) => {
+const microAppsData: microAppsDataItem[] = []
+const connectMicroApp = async (opt: microAppsDataItem) => {
   microAppsData.push(opt)
 }
 

@@ -1,13 +1,15 @@
-import { reactive } from 'vue'
-import postRobot from 'post-robot'
+import * as postRobot from 'post-robot'
 import { generateChannelData } from '../generator'
+import type { MicroAppItem } from '../container/type'
 
 type ParentListener = 'getMicroFrameRect' | 'reportRouter' | 'microAppStickStatus'
-type ChildernListener = 'containerConfigChang' | 'containerDataChang' | 'syncRouter'
+type ChildernListener = 'layoutDataChange' | 'syncRouter'
 
 const channelName = 'microApp'
 
-const channelData = reactive({})
+const channelData = {
+  appInfo: {} as MicroAppItem,
+}
 
 const sendToParent = async (key: ParentListener, data?: any) => {
   return postRobot

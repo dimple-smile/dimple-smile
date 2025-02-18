@@ -1,35 +1,12 @@
-import { reactive } from 'vue'
 import mitt from 'mitt'
 
 import { generateChannelData } from '../generator'
 
+import type { MicroAppItem, MicroAppStatus, MenuItem, NavItem, TabItem, ContainerInitOptions } from './type'
+
 const channelName = 'container'
 
-type NavItem = {
-  label: string
-  value: string
-  [key: string]: any
-}
-
-type MenuItem = {
-  label: string
-  value: string
-  [key: string]: any
-}
-
-type TabItem = {
-  label: string
-  value: string
-  [key: string]: any
-}
-
-type MicroAppItem = {
-  name: string
-  origin: string
-  activeRule: string
-}
-
-const channelData = reactive({
+const channelData = {
   /** 整个容器是否显示，默认为true，包括内容区域 */
   visible: undefined,
 
@@ -45,26 +22,38 @@ const channelData = reactive({
   /** 外框的tab标签栏是否显示，默认为true，单独设置此项优先级高于frameVisible */
   tabVisible: undefined,
 
+  /** 内容区是否显示，默认为true，单独设置此项优先级高于visible */
+  mountVisible: undefined,
+
   /** 子应用列表 */
   microApps: [] as MicroAppItem[],
 
   /** 当前激活的子应用名称 */
   activeMicroAppName: '',
 
-  /** 顶部导航菜单项 */
+  /** 当前激活的子应用信息 */
+  activeMicroAppItem: null,
+
+  /** 顶部导航菜单项列表 */
   navItems: [] as NavItem[],
 
+  /** 当前激活的顶部导航菜单项 */
   activeNavItem: null,
 
-  /** 左侧菜单项 */
+  /** 左侧菜单项列表 */
   menuItems: [] as MenuItem[],
+
+  /** 当前激活左侧菜单项 */
   activeMenuItem: null,
 
   /** 全量导航菜单项 */
   fullNavItems: [] as NavItem[],
 
-  /** 标签内容项 */
+  /** 标签内容项列表 */
   tabItems: [] as TabItem[],
+
+  /** 当前激活的标签内容项 */
+  activeTabItem: null,
 
   /** nav的BoundingClientRect信息 */
   navRect: { x: 0, y: 0, height: 0, width: 0 },
@@ -78,11 +67,20 @@ const channelData = reactive({
   /** mount的BoundingClientRect信息 */
   mountRect: { x: 0, y: 0, height: 0, width: 0 },
 
-  /** microApp的置顶状态 */
-  microAppStickStatus: false
-})
+  /** 子应用的置顶状态。子应用处于置顶时，主应用将无法触发外框的事件。 */
+  microAppStickStatus: false,
+
+  /** 容器创建时的初始化配置 */
+  initOptions: {} as ContainerInitOptions,
+}
 
 type Event = {
+  /** 容器组件onMounted生命周期 */
+  onMounted: any
+
+  /** 容器组件内布局容器onMounted生命周期 */
+  onLayoutMounted: any
+
   /** 顶部导航菜单项的点击事件 */
   navItemClick: any
 
@@ -105,9 +103,57 @@ type Event = {
   microAppShow: any
 }
 
+const channelItemData = generateChannelData<typeof channelData>(channelName, channelData)
+
 const channelItem = {
-  data: generateChannelData<typeof channelData>(channelName, channelData),
+  data: channelItemData,
   event: mitt<Event>(),
+  expose: {
+    /** 获取布局相关的数据key */
+    getLayoutDataKeys: (): any[] => {
+      return [
+        'visible',
+        'frameVisible',
+        'navVisible',
+        'menuVisible',
+        'tabVisible',
+        'mountVisible',
+        'navRect',
+        'menuRect',
+        'tabRect',
+        'mountRect',
+      ]
+    },
+    /** 设置子应用的状态 */
+    setMicroAppStatus: (microAppName: string, statusKey: keyof MicroAppStatus, statusValue: boolean) => {
+      const microApps = channelItemData.get().microApps
+      const microAppItemIndex = microApps.findIndex((item) => item.name === microAppName)
+      if (microAppItemIndex < 0) return
+      if (!microApps[microAppItemIndex].status) microApps[microAppItemIndex].status = {}
+      microApps[microAppItemIndex].status[statusKey] = statusValue
+      channelItemData.set({ microApps })
+    },
+    /** 获取子应用的状态 */
+    getMicroAppStatus: (microAppName: string) => {
+      return channelItemData.get().microApps.find((item) => item.name === microAppName)?.status
+    },
+    /** 子应用加载完成的promise，子应用加载过程是异步，可以使用此函数等待子应用加载完成 */
+    asyncMicroAppMounted: async (microAppName: string) => {
+      const microAppItem = channelItemData.get().microApps.find((item) => item.name === microAppName)
+      if (!microAppItem) return
+      if (microAppItem.status?.mounted) return microAppItem
+      await new Promise((resolve) => {
+        channelItemData.watch(
+          (newData) => {
+            const newMicroAppItem = newData.microApps.find((item) => item.name === microAppName)
+            if (newMicroAppItem?.status?.mounted) resolve(microAppItem)
+          },
+          ['microApps'],
+        )
+      })
+      return microAppItem
+    },
+  },
 }
 
 export const containerChannelItem = { container: channelItem }

@@ -1,36 +1,27 @@
-//@ts-nocheck
-
-import { toRaw, watch, ref } from 'vue'
+import { toRaw, watch, ref, markRaw } from 'vue'
 import isEqual from 'lodash-es/isEqual'
-import deepmerge from 'deepmerge'
 
 const busChannelData: any = {}
 const generateChannelData = <Data>(name, data) => {
+  busChannelData[name] = ref(data)
+
   const channelDataItem = {
     set: (
       payload: Partial<Data>,
       opt?: {
         notMerge?: boolean
-        replaceMerge?: string | string[]
       },
     ) => {
       if (!payload) return
       if (typeof payload !== 'object') return
-      const { notMerge = false, replaceMerge = [] } = opt || {}
+      const { notMerge = false } = opt || {}
       if (notMerge) return (busChannelData[name].value = payload)
-      busChannelData[name].value = deepmerge(busChannelData[name].value, payload)
-      if (Array.isArray(replaceMerge)) {
-        replaceMerge.map((key) => {
-          busChannelData[name].value[key] = payload[key]
-        })
-      }
-
-      if (typeof replaceMerge === 'string') {
-        busChannelData[name].value[replaceMerge] = payload[replaceMerge]
-      }
+      Object.keys(payload || {}).map((key) => {
+        busChannelData[name].value[key] = payload[key]
+      })
     },
-    get: (keys?: any[]): Data => {
-      const data = toRaw(busChannelData[name]?.value || {})
+    get: (keys?: (keyof Data)[]): Data => {
+      const data = busChannelData[name].value || {}
       if (!(keys && keys.length > 0)) return data
       let res = {}
       keys.forEach((key) => {
@@ -42,30 +33,24 @@ const generateChannelData = <Data>(name, data) => {
     watch: (
       /** 数据变化的回调 */
       cb: (newData: Data, oldData: Data) => any,
-      /** 只监听某些键的变化。默认会监听所有 */
-      watchKeys?: string[],
+      /** 只监听某些键的变化。默认会监听所有,在某些键值无法深层监听时有必要指定 */
+      watchKeys?: (keyof Data)[],
     ) => {
       return watch(
-        () => busChannelData[name].value,
-        (newData, oldData) => {
-          const newDataRaw = toRaw(newData)
-          const oldDataRaw = toRaw(oldData)
-          if (!(watchKeys && watchKeys.length > 0)) return cb(newDataRaw, oldDataRaw)
-          const watchNewData: any = {}
-          const watchOldData: any = {}
-          watchKeys.forEach((key) => {
-            watchNewData[key] = newDataRaw[key]
-            watchOldData[key] = oldDataRaw[key]
+        () => {
+          if (!(watchKeys && watchKeys?.length > 0)) return busChannelData[name].value
+          let res = {}
+          watchKeys.map((key) => {
+            res[key] = busChannelData[name].value[key]
           })
-          if (isEqual(watchNewData, watchOldData)) return
-          return cb(watchNewData, watchOldData)
+          return res
         },
+        cb,
         { deep: true },
       )
     },
   }
 
-  busChannelData[name] = ref(data)
   return channelDataItem
 }
 

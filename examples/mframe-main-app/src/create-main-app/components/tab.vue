@@ -1,5 +1,5 @@
 <template>
-  <div @click="handleClick">
+  <div @click="handleClick" style="background-color: #fff">
     tab组件
   </div>
 </template>

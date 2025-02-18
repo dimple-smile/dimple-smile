@@ -1,5 +1,5 @@
 <template>
-  <div style="display: flex;justify-content: center;align-items: center;gap: 10px;">
+  <div style="display: flex;justify-content: center;align-items: center;gap: 10px;background-color: #fff">
     <h1>顶部菜单</h1>
     <el-button @click="visible = true">主应用打开弹窗</el-button>
     <el-dialog v-model="visible"> xxx </el-dialog>

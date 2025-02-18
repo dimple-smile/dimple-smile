@@ -1,5 +1,5 @@
-import { h, render, watch } from 'vue'
-import { createMainApp as createDasMainApp, bus, router as mframeRouter } from '@dimple-smile/mframe'
+import { h, render } from 'vue'
+import { createMainApp as createDasMainApp, bus } from '@dimple-smile/mframe'
 
 import type { Router } from 'vue-router'
 
@@ -8,7 +8,6 @@ import Menu from './components/menu.vue'
 import Tab from './components/tab.vue'
 
 const containerBus = bus('container')
-const mainAppBus = bus('mainApp')
 
 const createMainApp = (opt: { router: Router }) => {
   const { router } = opt || {}
@@ -20,6 +19,12 @@ const createMainApp = (opt: { router: Router }) => {
         origin: 'http://localhost:5174',
         activeRule: '/micro-app-1/*',
       },
+      {
+        name: 'app2',
+        origin: 'http://localhost:5175',
+        activeRule: '/micro-app-2/*',
+        router: { mode: 'hash' },
+      },
     ],
   })
 
@@ -30,20 +35,6 @@ const createMainApp = (opt: { router: Router }) => {
   containerBus.event.on('menuItemClick', (e) => {
     router.push(e.path)
   })
-
-  mainAppBus.event.on('reportRouter', (data) => {
-    if(location.href === data.href) return
-    const { path } = data
-    router.push(path)
-  })
-
-  watch(
-    () => router.currentRoute.value,
-    (route) => {
-      mframeRouter.resolve(route.fullPath)
-    },
-  )
-
   return { mountDom }
 }
 

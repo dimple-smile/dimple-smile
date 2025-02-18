@@ -6,8 +6,7 @@
       @mouseenter="(e) => handleMouseEvent('mouseenter', e, 'nav')"
       @mousemove="(e) => handleMouseEvent('mousemove', e, 'nav')"
     >
-      <div v-if="isMainApp">microAppStickStatus:{{ microAppStickStatus }}</div>
-      <div v-show="isMainApp && navTeleportId" :id="navTeleportId"></div>
+      <div v-if="isMainApp && navTeleportId" :id="navTeleportId"></div>
       <div v-if="isMicroApp" style="pointer-events: none" :style="{ height: placeholderStyle.navHeight }"></div>
     </header>
 
@@ -19,7 +18,7 @@
         @mouseenter="(e) => handleMouseEvent('mouseenter', e, 'menu')"
         @mousemove="(e) => handleMouseEvent('mousemove', e, 'menu')"
       >
-        <div v-show="isMainApp && menuTeleportId" :id="menuTeleportId" style="height: 100%"></div>
+        <div v-if="isMainApp && menuTeleportId" :id="menuTeleportId" style="height: 100%"></div>
         <div v-if="isMicroApp" style="pointer-events: none" :style="{ width: placeholderStyle.menuWidth }"></div>
       </aside>
       <main style="flex: 1; min-width: 0; display: flex; flex-direction: column">
@@ -29,10 +28,11 @@
           @mouseenter="(e) => handleMouseEvent('mouseenter', e, 'tab')"
           @mousemove="(e) => handleMouseEvent('mousemove', e, 'tab')"
         >
-          <div v-show="isMainApp && tabTeleportId" :id="tabTeleportId"></div>
+          <div v-if="isMainApp && tabTeleportId" :id="tabTeleportId"></div>
           <div v-if="isMicroApp" style="pointer-events: none" :style="{ height: placeholderStyle.tabHeight }"></div>
         </header>
         <section
+          v-show="mountVisible"
           ref="mountRef"
           style="flex: 1; min-height: 0"
           :id="mountTeleportId"
@@ -43,20 +43,22 @@
     </section>
 
     <template v-if="isMainApp && microApps.length">
-      <div v-show="activeMicroAppName" name="mframe-micro-app-container" :style="microAppsContainerStyle">
-        <MicroAppsComponet></MicroAppsComponet>
+      <div
+        ref="microAppContainerRef"
+        name="mframe-micro-app-container"
+        :style="microAppsContainerStyle"
+      >
+        <!-- <MicroAppsComponet></MicroAppsComponet> -->
       </div>
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import type { CSSProperties } from 'vue'
 
-import MicroAppsComponet from './micro-apps.vue'
-
-import { bus, pollVariable } from '@dimple-smile/mframe'
+import { bus, useIframeManager } from '@dimple-smile/mframe'
 
 const props = defineProps([
   'type',
@@ -65,6 +67,7 @@ const props = defineProps([
   'menuTeleportId',
   'tabTeleportId',
   'clearBackgroundStyles',
+  'microAppsContainerStyle',
 ])
 
 const mountTeleportId = computed(() => props.mountTeleportId || '')
@@ -85,9 +88,8 @@ containerBus.data.watch((newData) => (data.value = newData))
 const navVisible = computed(() => data.value.navVisible ?? data.value.visible ?? true)
 const menuVisible = computed(() => data.value.menuVisible ?? data.value.visible ?? true)
 const tabVisible = computed(() => data.value.tabVisible ?? data.value.visible ?? true)
-
+const mountVisible = computed(() => data.value.mountVisible ?? data.value.visible ?? true)
 const activeMicroAppName = computed(() => data.value.activeMicroAppName || '')
-const microAppStickStatus = computed(() => data.value.microAppStickStatus)
 
 const placeholderStyle = computed(() => {
   return {
@@ -107,7 +109,8 @@ const containerStyle = computed<CSSProperties>(() => {
 })
 
 const checkLayoutHasUsefulDom = () => {
-  function getDomElementInRect(targetEl, step = 10) {
+  function getDomElementInRect(targetEl: Element, step = 10) {
+    if (!targetEl) return
     const rect = targetEl.getBoundingClientRect()
     const { x, y, width, height } = rect
     const startX = x
@@ -123,11 +126,11 @@ const checkLayoutHasUsefulDom = () => {
         }
       }
     }
-    return null
+    return
   }
-  let res = getDomElementInRect(navRef.value)
-  if (!res) res = getDomElementInRect(tabRef.value)
-  if (!res) res = getDomElementInRect(menuRef.value)
+  let res = getDomElementInRect(navRef.value!)
+  if (!res) res = getDomElementInRect(tabRef.value!)
+  if (!res) res = getDomElementInRect(menuRef.value!)
   return res
 }
 
@@ -167,11 +170,22 @@ const mountStyle = computed<CSSProperties>(() => {
   return resStyle
 })
 
+const microAppContainerLoading = ref(false)
+watch(
+  () => activeMicroAppName.value,
+  (newVal) => {
+    microAppContainerLoading.value = true
+    setTimeout(() => {
+      microAppContainerLoading.value = false
+    }, 300)
+  },
+)
+
 const microAppsContainerStyle = computed<CSSProperties>(() => {
   let resStyle: CSSProperties = {
-    ...(data.value.microAppsContainerStyle || {}),
+    ...(props.microAppsContainerStyle || {}),
     position: 'absolute',
-    zIndex: 1,
+    zIndex: microAppContainerLoading.value ? -1 : 1,
     top: 0,
     left: 0,
     height: '100%',
@@ -185,51 +199,43 @@ const navRef = ref<HTMLElement | null>(null)
 const menuRef = ref<HTMLElement | null>(null)
 const tabRef = ref<HTMLElement | null>(null)
 const mountRef = ref<HTMLElement | null>(null)
-
-const containerConfigKeys = [
-  'visible',
-  'menuCollapse',
-  'navVisible',
-  'menuVisible',
-  'tabVisible',
-  'frameVisible',
-  'navRect',
-  'menuRect',
-  'tabRect',
-  'mountRect',
-]
-
-const setMicroAppContainerConfig = async () => {
-  const containerConfig = containerBus.data.get(containerConfigKeys)
-  const activeMicroAppName: any = await pollVariable(() => data.value.activeMicroAppName)
-  mainAppBus.cors.send(activeMicroAppName!, 'containerConfigChang', containerConfig)
-}
-containerBus.data.watch(setMicroAppContainerConfig, containerConfigKeys)
+const microAppContainerRef = ref<HTMLElement | null>(null)
 
 if (isMainApp.value) {
-  const createLayoutWatch = (key: any, dataRef: any) => {
-    watch(
-      () => dataRef.value,
-      (dom) => {
-        const { x, y, width, height } = dom?.getBoundingClientRect() || {}
-        containerBus.data.set({ [key]: { x, y, width, height } })
-
-        const ob = new MutationObserver((e) => {
-          const { x, y, width, height, top, left } = dom?.getBoundingClientRect() || {}
-          containerBus.data.set({ [key]: { x, y, width, height, top, left } })
-        })
-        ob.observe(dom!, { childList: true, subtree: true })
-      },
-    )
+  const layoutRectObj = { navRect: navRef, menuRect: menuRef, tabRect: tabRef, mountRect: mountRef }
+  const createMutationObserver = (dom: any, dataKey: any) => {
+    const handleChange = () => {
+      const { x, y, width, height } = dom?.getBoundingClientRect() || {}
+      containerBus.data.set({ [dataKey]: { x, y, width, height } })
+    }
+    handleChange()
+    new MutationObserver(handleChange).observe(dom!, { childList: true, subtree: true })
   }
+  const onLayoutMounted = async () => {
+    await Promise.all(
+      Object.keys(layoutRectObj).map(async (dataKey) => {
+        // @ts-ignore
+        const domRef = layoutRectObj[dataKey]
+        await new Promise((res) => watch(() => domRef.value, res))
+        createMutationObserver(domRef.value, dataKey)
+      }),
+    )
+    containerBus.event.emit('onLayoutMounted')
+  }
+  onLayoutMounted()
 
-  createLayoutWatch('navRect', navRef)
-  createLayoutWatch('menuRect', menuRef)
-  createLayoutWatch('tabRect', tabRef)
-  createLayoutWatch('mountRect', mountRef)
-  mainAppBus.cors.on('microAppStickStatus', (e) => {
+  containerBus.data.watch(() => {
+    const activeMicroAppName: any = data.value.activeMicroAppName
+    if (!activeMicroAppName) return
+    const layoutData = containerBus.data.get(containerBus.expose.getLayoutDataKeys())
+    mainAppBus.cors.send(activeMicroAppName, 'layoutDataChange', layoutData)
+  }, containerBus.expose.getLayoutDataKeys())
+
+  mainAppBus.cors.on('microAppStickStatus', (e: any) => {
     containerBus.data.set({ microAppStickStatus: e.data })
   })
+
+  watch(() => microAppContainerRef.value, useIframeManager().setMountDom)
 }
 
 if (isMicroApp.value) {
@@ -238,13 +244,17 @@ if (isMicroApp.value) {
   try {
     iframeData = JSON.parse(window.name)
   } catch {}
-  const { parentData = {} } = iframeData
-  containerBus.data.set(parentData.containerConfig)
-  microAppBus.cors.on('containerConfigChang', (e: any) => {
+  const { appInfo, parentData = {} } = iframeData
+  containerBus.data.set(parentData.layoutData)
+  microAppBus.data.set({ appInfo })
+  microAppBus.cors.on('layoutDataChange', (e: any) => {
     containerBus.data.set(e.data)
   })
 }
 
+onMounted(() => {
+  containerBus.event.emit('onMounted')
+})
 </script>
 
 <style scoped></style>

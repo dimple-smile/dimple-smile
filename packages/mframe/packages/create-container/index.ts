@@ -1,6 +1,8 @@
 import { h, render } from 'vue'
-
+import { bus } from '@dimple-smile/mframe'
 import Container from './components/container.vue'
+
+import type { ContainerInitOptions } from '../bus/container/type'
 
 const prefix = `dimple-smile-mframe-container-`
 function clearBackground(element: HTMLElement) {
@@ -21,33 +23,30 @@ function clearBackground(element: HTMLElement) {
   const computedStyle = getComputedStyle(element)
   const removedStyles = {}
   removedStyleKeys.map((key) => {
+    // @ts-ignore
     removedStyles[key] = computedStyle[key]
   })
-  removedStyleKeys.map((key) => {
+  removedStyleKeys.map((key: any) => {
     element.style[key] = 'none'
   })
   return removedStyles
 }
 
-const createContainer = (opt?: {
-  /** 支持 #id，或者传入dom，默认值为#app。支持document.body或者其他dom */
-  appendTo?: String | HTMLElement
-
-  /** 容器类型。默认为microApp */
-  type?: 'mainApp' | 'microApp'
-
-  /** 作为子应用时，是否自动清除html、body、挂载点的背景颜色。默认清除，防止子应用的背景颜色覆盖主应用，但是会自动继到可用的布局容器中 */
-  autoClearBackground?: Boolean
-}) => {
+const createContainer = (opt?: ContainerInitOptions) => {
   const { appendTo = '#app', type, autoClearBackground } = opt || {}
+
+  const isMicroApp = type === 'microApp'
 
   let appendToDom: any
   if (typeof appendTo === 'string') appendToDom = document.getElementById(appendTo.replace('#', ''))
   if (appendTo instanceof HTMLElement) appendToDom = appendTo
   if (!appendToDom) throw new Error('appendTo must be #id string or HTMLElement')
 
+  const containerBus = bus('container')
+  containerBus.data.set({ initOptions: opt })
+
   let clearBackgroundStyles = {}
-  if (type === 'microApp' && autoClearBackground !== false) {
+  if (isMicroApp && autoClearBackground !== false) {
     Object.assign(clearBackgroundStyles, clearBackground(document.documentElement))
     Object.assign(clearBackgroundStyles, clearBackground(document.body))
     Object.assign(clearBackgroundStyles, clearBackground(appendToDom))
@@ -58,7 +57,7 @@ const createContainer = (opt?: {
   const menuTeleportId = `${prefix}-menu-${new Date().getTime()}`
   const tabTeleportId = `${prefix}-tab-${new Date().getTime()}`
   const vnode = h(Container, {
-    type: type,
+    type,
     mountTeleportId,
     navTeleportId,
     menuTeleportId,

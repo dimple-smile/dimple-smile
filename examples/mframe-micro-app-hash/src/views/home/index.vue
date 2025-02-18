@@ -1,6 +1,6 @@
 <template>
   <div style="height: 100%; color: #fff">
-    <span>micro-app-1 home</span>
+    <span>micro-app-2 home</span>
     <el-button @click="openMessage">open Message</el-button>
     <el-button @click="openMessageBox">open MessageBox</el-button>
     <el-button @click="openNotification">open Notification</el-button>
@@ -50,7 +50,7 @@ const openNotification = () => {
 
 const router = useRouter()
 const push = () => {
-  router.push('/micro-app-1/test?a=1&c=2')
+  router.push('/micro-app-2/test')
 }
 </script>
 
