@@ -1,9 +1,9 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory, createWebHashHistory } from 'vue-router'
 
 const routes: any[] = Object.values(
   import.meta.glob('../views/**/router.ts', { eager: true, import: 'default' }),
 ).flat()
 
-const router = createRouter({ history: createWebHistory(), routes })
+const router = createRouter({ history: createWebHashHistory(), routes })
 
 export { router }

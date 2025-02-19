@@ -13,6 +13,7 @@ const createMainApp = (opt: { router: Router }) => {
   const { router } = opt || {}
 
   const { mountDom, navDom, menuDom, tabDom } = createDasMainApp({
+    router: { mode: 'hash' },
     microApps: [
       {
         name: 'app1',

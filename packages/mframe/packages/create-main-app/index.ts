@@ -36,13 +36,17 @@ const createMainApp = (opt?: MainAppContainerInitOptions) => {
     if (!checkIframeStatus(microAppItem.name, ['mounted', 'activated'])) return
     const { pathname, hash, search } = new URL(window.location.href)
     let currentPath = pathname + search
-    if (containerBus.data.get().initOptions.router?.mode === 'hash') currentPath = hash.replace('#', '')
-    if (currentPath === data.path) return
+    let replacePath = data.path
+    if (containerBus.data.get().initOptions.router?.mode === 'hash') {
+      currentPath = `/${hash}`
+      replacePath = `/#${data.path}`
+    }
+    if (currentPath === replacePath) return
     onReportRouterLoaidng.value = true
     setTimeout(() => {
       onReportRouterLoaidng.value = false
     }, 300)
-    replaceState(data.path)
+    replaceState(replacePath)
   })
 
   const syncRouterToMicroApp = (matchMicroAppItem: any, parentRouter: any) => {
