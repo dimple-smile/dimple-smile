@@ -1,7 +1,7 @@
 import { ref, watch } from 'vue'
 import mitt from 'mitt'
 import { bus } from '@dimple-smile/mframe'
-import type { MicroAppContainerInitOptions } from '../bus/container/type';
+import type { MicroAppContainerInitOptions } from '../bus/container/type'
 
 enum LifeCycleKey {
   'registered',
@@ -121,7 +121,7 @@ const useIframeManager = () => {
       if (Array.isArray(status)) return status.includes(iframes.get(id).status)
       return iframes.get(id).status === status
     },
-    iframeEvent:event,
+    iframeEvent: event,
     loadIframe,
     hideIframe,
     destroyIframe: (id: string) => {

@@ -8,12 +8,10 @@ const { replaceState } = useRouter()
 const { addRouterEventListener } = useRouterEventListener()
 
 const autoSyncRouter = (opt?: any) => {
-  const containerBus = bus('container')
   const microAppBus = bus('microApp')
 
   const syncRouterLoading = ref(false)
   microAppBus.cors.on('syncRouter', (e: any) => {
-    if (containerBus.data.get().initOptions.router?.sync === false) return
     if (syncRouterLoading.value) return
     syncRouterLoading.value = true
     setTimeout(() => (syncRouterLoading.value = false), 300)
@@ -24,19 +22,23 @@ const autoSyncRouter = (opt?: any) => {
     let currentPath = pathname + search
     if (microAppInfo.router?.mode === 'hash') currentPath = hash.replace('#', '')
     if (currentPath === data.path) return
+
+    const appInfo = microAppBus.data.get().appInfo
+    const autoSyncRouter = appInfo.router?.sync ?? true
+    if (!autoSyncRouter) return
     replaceState(data.replacePath)
   })
 
   addRouterEventListener(['replaceState'], async (e) => {
     if (syncRouterLoading.value) return
+    const appInfo = microAppBus.data.get().appInfo
+    if (!appInfo) return
     await new Promise((res) => setTimeout(res, 0))
-    const { pathname, hash, search } = new URL(window.location.href)
-    let path = pathname + search
-    if (containerBus.data.get().initOptions.router?.mode === 'hash') path = hash.replace('#', '')
+    const autoSyncRouter = appInfo.router?.sync ?? true
+    if (!autoSyncRouter) return
     microAppBus.cors.send('reportRouter', {
-      herf: window.location.href,
-      path,
-      appInfo: microAppBus.data.get().appInfo,
+      href: window.location.href,
+      appInfo,
       historyEvent: { type: e.type, state: history.state },
     })
   })

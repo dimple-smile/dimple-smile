@@ -1,11 +1,8 @@
 import { ref } from 'vue'
-import { createContainer, bus, router, useIframeManager } from '@dimple-smile/mframe'
+import { createContainer, bus, useIframeManager } from '@dimple-smile/mframe'
 import { useRouterEventListener, useRouter } from '../router'
 
 import type { MainAppContainerInitOptions } from '../bus/container/type'
-
-const { addRouterEventListener } = useRouterEventListener()
-const { replaceState } = useRouter()
 
 const createMainApp = (opt?: MainAppContainerInitOptions) => {
   if (!opt) opt = {}
@@ -13,6 +10,9 @@ const createMainApp = (opt?: MainAppContainerInitOptions) => {
   const containerRes = createContainer({ type: 'mainApp', ...opt })
   const containerBus = bus('container')
   const mainAppBus = bus('mainApp')
+  const { addRouterEventListener } = useRouterEventListener()
+  const router = useRouter()
+
   const microAppsData = ref(microApps)
   containerBus.data.watch((newData) => (microAppsData.value = newData.microApps), ['microApps'])
   containerBus.data.set({ microApps })
@@ -28,25 +28,33 @@ const createMainApp = (opt?: MainAppContainerInitOptions) => {
 
   const onReportRouterLoaidng = ref(false)
   mainAppBus.cors.on('reportRouter', (e: any) => {
-    mainAppBus.event.emit('reportRouter', e)
     const { data } = e || {}
     if (!data.appInfo) return
     const microAppItem = containerBus.data.get().microApps.find((item) => item.name === data.appInfo.name)
     if (!microAppItem) return
+    const autoSyncRouter = microAppItem.router?.sync ?? true
+    if (!autoSyncRouter) return
+
     if (!checkIframeStatus(microAppItem.name, ['mounted', 'activated'])) return
+
     const { pathname, hash, search } = new URL(window.location.href)
     let currentPath = pathname + search
-    let replacePath = data.path
+
+    const { pathname: childPathname, hash: childHash, search: childSearch } = new URL(data.href)
+    let replacePath = childPathname + childSearch
+    if (microAppItem.router?.mode === 'hash') replacePath = childHash.replace('#', '')
+
     if (containerBus.data.get().initOptions.router?.mode === 'hash') {
       currentPath = `/${hash}`
-      replacePath = `/#${data.path}`
+      replacePath = `/#${replacePath}`
     }
     if (currentPath === replacePath) return
     onReportRouterLoaidng.value = true
     setTimeout(() => {
       onReportRouterLoaidng.value = false
     }, 300)
-    replaceState(replacePath)
+
+    router.replaceState(replacePath)
   })
 
   const syncRouterToMicroApp = (matchMicroAppItem: any, parentRouter: any) => {

@@ -1,4 +1,3 @@
-import { ref, watch } from 'vue'
 import Navigo from 'navigo'
 import { bus } from '@dimple-smile/mframe'
 
@@ -8,32 +7,16 @@ import type { Match } from 'navigo'
 
 const router = new Navigo('/')
 
-let currentMicroAppInfo = {}
-
-const onLoading = ref(true)
-const syncRouter = (cb: (params: { appInfo: any; route: Match }) => any) => {
+const syncRouter = (cb: (params: { appInfo: any; route: Match; parentRouter: any; replacePath: string }) => any) => {
   const microAppBus = bus('microApp')
-
-  microAppBus.cors.on('syncRouter', (e: any) => {
-    const { data } = e
-    currentMicroAppInfo = data.appInfo
-    cb(data)
-    onLoading.value = false
-  })
+  microAppBus.cors.on('syncRouter', (e: any) => cb(e.data))
 }
 
-const reportRouter = async (data: {
-  /** 路由模式。默认history */
-  type?: 'history'
-  /** 路由地址 */
-  path: string
-}) => {
-  if (onLoading.value) await new Promise((res) => watch(() => onLoading.value, res))
-  let { path } = data || {}
-  if (!path) return
+const reportRouter = async (data?: any) => {
   const microAppBus = bus('microApp')
-  if (!path?.startsWith('/')) path = '/' + path
-  microAppBus.cors.send('reportRouter', { ...data, path, href: location.href, appInfo: currentMicroAppInfo })
+  const appInfo = microAppBus.data.get().appInfo
+  if (!appInfo) return
+  microAppBus.cors.send('reportRouter', { data, href: location.href, appInfo })
 }
 
 const useRouter = () => {
@@ -49,6 +32,10 @@ const useRouter = () => {
 
   return {
     replaceState,
+    resolve: router.resolve,
+    on: router.on,
+    match: router.match,
+    getCurrentLocation: router.getCurrentLocation,
   }
 }
 
@@ -68,7 +55,7 @@ const useRouterEventListener = () => {
     }
   }
 
-  const removeRouterEventListener  = (type?: RouterEventListenerTypes | RouterEventListenerTypes[]) => {
+  const removeRouterEventListener = (type?: RouterEventListenerTypes | RouterEventListenerTypes[]) => {
     let typeList = [] as RouterEventListenerTypes[]
     if (typeof type === 'string') typeList.push(type)
     if (Array.isArray(type)) typeList = type
@@ -84,4 +71,4 @@ const useRouterEventListener = () => {
   return { addRouterEventListener, removeRouterEventListener }
 }
 
-export { router, syncRouter, reportRouter, useRouter, useRouterEventListener }
+export { syncRouter, reportRouter, useRouter, useRouterEventListener }
