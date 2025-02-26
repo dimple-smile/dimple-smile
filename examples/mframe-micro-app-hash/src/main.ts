@@ -10,5 +10,6 @@ const app = createApp(App)
 app.use(router)
 app.use(elementPlus)
 
-const { mountDom } = createMicroApp({ router: { mode: 'hash' } })
-app.mount(mountDom!)
+createMicroApp().then((res) => {
+  app.mount(res.mountDom!)
+})

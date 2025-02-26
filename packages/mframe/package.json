@@ -2,11 +2,11 @@
   "name": "@dimple-smile/mframe",
   "version": "0.0.0",
   "type": "module",
-  "main": "./packages/index.ts",
+  "main": "./dist/index.js",
   "scripts": {
     "dev": "vite",
     "build": "node scripts/build",
-    "pub": "node scripts/publish"
+    "pub": "sudo node scripts/publish"
   },
   "dependencies": {
     "@dimple-smile/mframe": "workspace:*",

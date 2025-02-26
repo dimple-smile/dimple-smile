@@ -1,44 +1,45 @@
 <template>
   <div :style="containerStyle">
     <header
-      v-show="navVisible"
-      ref="navRef"
+      v-show="visibles.nav"
+      :ref="layoutDomRefs.nav"
       @mouseenter="(e) => handleMouseEvent('mouseenter', e, 'nav')"
       @mousemove="(e) => handleMouseEvent('mousemove', e, 'nav')"
     >
-      <div v-if="isMainApp && navTeleportId" :id="navTeleportId"></div>
+      <div v-if="isMainApp" :ref="teleportDomRefs.nav"></div>
       <div v-if="isMicroApp" style="pointer-events: none" :style="{ height: placeholderStyle.navHeight }"></div>
     </header>
 
     <section style="flex: 1; display: flex; min-height: 0">
       <aside
-        v-show="menuVisible"
-        ref="menuRef"
+        v-show="visibles.menu"
+        :ref="layoutDomRefs.menu"
         style="height: 100%"
         @mouseenter="(e) => handleMouseEvent('mouseenter', e, 'menu')"
         @mousemove="(e) => handleMouseEvent('mousemove', e, 'menu')"
       >
-        <div v-if="isMainApp && menuTeleportId" :id="menuTeleportId" style="height: 100%"></div>
+        <div v-if="isMainApp" :ref="teleportDomRefs.menu" style="height: 100%"></div>
         <div v-if="isMicroApp" style="pointer-events: none" :style="{ width: placeholderStyle.menuWidth }"></div>
       </aside>
       <main style="flex: 1; min-width: 0; display: flex; flex-direction: column">
         <header
-          v-show="tabVisible"
-          ref="tabRef"
+          v-show="visibles.tab"
+          :ref="layoutDomRefs.tab"
           @mouseenter="(e) => handleMouseEvent('mouseenter', e, 'tab')"
           @mousemove="(e) => handleMouseEvent('mousemove', e, 'tab')"
         >
-          <div v-if="isMainApp && tabTeleportId" :id="tabTeleportId"></div>
+          <div v-if="isMainApp" :ref="teleportDomRefs.tab"></div>
           <div v-if="isMicroApp" style="pointer-events: none" :style="{ height: placeholderStyle.tabHeight }"></div>
         </header>
         <section
-          v-show="mountVisible"
-          ref="mountRef"
+          v-show="visibles.mount"
+          :ref="layoutDomRefs.mount"
           style="flex: 1; min-height: 0"
-          :id="mountTeleportId"
           :style="mountStyle"
           @mouseenter="(e) => handleMouseEvent('mouseenter', e, 'mount')"
-        ></section>
+        >
+          <div :ref="teleportDomRefs.mount" style="height: 100%"></div>
+        </section>
       </main>
     </section>
 
@@ -54,20 +55,9 @@ import { bus, useIframeManager } from '@dimple-smile/mframe'
 
 import type { CSSProperties } from 'vue'
 
-const props = defineProps([
-  'type',
-  'mountTeleportId',
-  'navTeleportId',
-  'menuTeleportId',
-  'tabTeleportId',
-  'clearBackgroundStyles',
-  'microAppsContainerStyle',
-])
+const props = defineProps(['type', 'clearBackgroundStyles', 'microAppsContainerStyle'])
+const emits = defineEmits(['layoutMounted'])
 
-const mountTeleportId = computed(() => props.mountTeleportId || '')
-const navTeleportId = computed(() => props.navTeleportId || '')
-const menuTeleportId = computed(() => props.menuTeleportId || '')
-const tabTeleportId = computed(() => props.tabTeleportId || '')
 const microApps = computed<any[]>(() => data.value.microApps || [])
 
 const containerBus = bus('container')
@@ -79,10 +69,29 @@ const isMicroApp = computed(() => ['microApp'].includes(props.type))
 const data = ref(containerBus.data.get())
 containerBus.data.watch((newData) => (data.value = newData))
 
-const navVisible = computed(() => data.value.navVisible ?? data.value.visible ?? true)
-const menuVisible = computed(() => data.value.menuVisible ?? data.value.visible ?? true)
-const tabVisible = computed(() => data.value.tabVisible ?? data.value.visible ?? true)
-const mountVisible = computed(() => data.value.mountVisible ?? data.value.visible ?? true)
+const visibles = computed(() => {
+  return {
+    nav: data.value.navVisible ?? data.value.frameVisible ?? data.value.visible ?? true,
+    menu: data.value.menuVisible ?? data.value.frameVisible ?? data.value.visible ?? true,
+    tab: data.value.tabVisible ?? data.value.frameVisible ?? data.value.visible ?? true,
+    mount: data.value.mountVisible ?? data.value.visible ?? true,
+  }
+})
+
+const layoutDomRefs = {
+  nav: ref<HTMLElement | null>(null),
+  menu: ref<HTMLElement | null>(null),
+  tab: ref<HTMLElement | null>(null),
+  mount: ref<HTMLElement | null>(null),
+}
+
+const teleportDomRefs = {
+  nav: ref<HTMLElement | null>(null),
+  menu: ref<HTMLElement | null>(null),
+  tab: ref<HTMLElement | null>(null),
+  mount: ref<HTMLElement | null>(null),
+}
+
 const activeMicroAppName = computed(() => data.value.activeMicroAppName || '')
 
 const placeholderStyle = computed(() => {
@@ -111,7 +120,14 @@ const checkLayoutHasUsefulDom = () => {
     const startY = y
     const endX = x + width
     const endY = y + height
-    const excludeList = [document.documentElement, document.body, targetEl, menuRef.value, navRef.value, tabRef.value]
+    const excludeList = [
+      document.documentElement,
+      document.body,
+      targetEl,
+      layoutDomRefs.menu.value,
+      layoutDomRefs.nav.value,
+      layoutDomRefs.tab.value,
+    ]
     for (let x = startX; x <= endX; x += step) {
       for (let y = startY; y <= endY; y += step) {
         const element = document.elementFromPoint(x, y)
@@ -122,9 +138,9 @@ const checkLayoutHasUsefulDom = () => {
     }
     return
   }
-  let res = getDomElementInRect(navRef.value!)
-  if (!res) res = getDomElementInRect(tabRef.value!)
-  if (!res) res = getDomElementInRect(menuRef.value!)
+  let res = getDomElementInRect(layoutDomRefs.nav.value!)
+  if (!res) res = getDomElementInRect(layoutDomRefs.tab.value!)
+  if (!res) res = getDomElementInRect(layoutDomRefs.menu.value!)
   return res
 }
 
@@ -167,7 +183,7 @@ const mountStyle = computed<CSSProperties>(() => {
 const microAppContainerLoading = ref(false)
 watch(
   () => activeMicroAppName.value,
-  (newVal) => {
+  () => {
     microAppContainerLoading.value = true
     setTimeout(() => {
       microAppContainerLoading.value = false
@@ -189,32 +205,39 @@ const microAppsContainerStyle = computed<CSSProperties>(() => {
   return resStyle
 })
 
-const navRef = ref<HTMLElement | null>(null)
-const menuRef = ref<HTMLElement | null>(null)
-const tabRef = ref<HTMLElement | null>(null)
-const mountRef = ref<HTMLElement | null>(null)
 const microAppContainerRef = ref<HTMLElement | null>(null)
 
 if (isMainApp.value) {
-  const layoutRectObj = { navRect: navRef, menuRect: menuRef, tabRect: tabRef, mountRect: mountRef }
-  const createMutationObserver = (dom: any, dataKey: any) => {
-    const handleChange = () => {
-      const { x, y, width, height } = dom?.getBoundingClientRect() || {}
-      containerBus.data.set({ [dataKey]: { x, y, width, height } })
-    }
-    handleChange()
-    new MutationObserver(handleChange).observe(dom!, { childList: true, subtree: true })
-  }
   const onLayoutMounted = async () => {
-    await Promise.all(
-      Object.keys(layoutRectObj).map(async (dataKey) => {
+    const createMutationObserver = (type: string) => {
+      // @ts-ignore
+      const dom = layoutDomRefs[type]?.value
+      const handleChange = () => {
+        const { x, y, width, height } = dom?.getBoundingClientRect() || {}
+        containerBus.data.set({ [`${type}Rect`]: { x, y, width, height } })
+      }
+      handleChange()
+      new MutationObserver(handleChange).observe(dom!, { childList: true, subtree: true })
+    }
+    await Promise.all([
+      ...Object.keys(layoutDomRefs).map(async (dataKey) => {
         // @ts-ignore
-        const domRef = layoutRectObj[dataKey]
+        const domRef = layoutDomRefs[dataKey]
         await new Promise((res) => watch(() => domRef.value, res))
-        createMutationObserver(domRef.value, dataKey)
+        createMutationObserver(dataKey)
       }),
-    )
+      ...Object.keys(teleportDomRefs).map(async (dataKey) => {
+        // @ts-ignore
+        await new Promise((res) => watch(() => teleportDomRefs[dataKey].value, res))
+      }),
+    ])
     containerBus.event.emit('onLayoutMounted')
+    emits('layoutMounted', {
+      navDom: teleportDomRefs.nav.value,
+      menuDom: teleportDomRefs.menu.value,
+      tabDom: teleportDomRefs.tab.value,
+      mountDom: teleportDomRefs.mount.value,
+    })
   }
   onLayoutMounted()
 
@@ -245,6 +268,21 @@ if (isMicroApp.value) {
   microAppBus.cors.on('layoutDataChange', (e: any) => {
     containerBus.data.set(e.data)
   })
+
+  const onLayoutMounted = async () => {
+    await Promise.all([
+      ...Object.keys(layoutDomRefs).map(async (dataKey) => {
+        // @ts-ignore
+        const domRef = layoutDomRefs[dataKey]
+        await new Promise((res) => watch(() => domRef.value, res))
+      }),
+    ])
+    containerBus.event.emit('onLayoutMounted')
+    emits('layoutMounted', {
+      mountDom: teleportDomRefs.mount.value,
+    })
+  }
+  onLayoutMounted()
 }
 
 onMounted(() => {

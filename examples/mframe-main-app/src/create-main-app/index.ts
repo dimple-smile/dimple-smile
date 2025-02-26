@@ -9,10 +9,10 @@ import Tab from './components/tab.vue'
 
 const containerBus = bus('container')
 
-const createMainApp = (opt: { router: Router }) => {
+const createMainApp = async (opt: { router: Router }) => {
   const { router } = opt || {}
 
-  const { mountDom, navDom, menuDom, tabDom } = createDasMainApp({
+  const { navDom, menuDom, tabDom, mountDom } = await createDasMainApp({
     router: { mode: 'hash' },
     microApps: [
       {
@@ -28,11 +28,9 @@ const createMainApp = (opt: { router: Router }) => {
       },
     ],
   })
-
   render(h(Nav), navDom!)
   render(h(Menu), menuDom!)
   render(h(Tab), tabDom!)
-
   containerBus.event.on('menuItemClick', (e) => {
     router.push(e.path)
   })

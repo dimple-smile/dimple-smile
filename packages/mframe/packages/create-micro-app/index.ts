@@ -2,12 +2,12 @@ import { ref } from 'vue'
 import { createContainer, bus } from '@dimple-smile/mframe'
 import { useRouter, useRouterEventListener } from '../router'
 
-import type { MicroAppContainerInitOptions } from '../bus/container/type'
+import type { MicroAppContainerInitOptions, MicroAppContainerResult } from '../bus/container/type'
 
 const { replaceState } = useRouter()
 const { addRouterEventListener } = useRouterEventListener()
 
-const autoSyncRouter = (opt?: any) => {
+const autoSyncRouter = () => {
   const microAppBus = bus('microApp')
 
   const syncRouterLoading = ref(false)
@@ -44,12 +44,11 @@ const autoSyncRouter = (opt?: any) => {
   })
 }
 
-const createMicroApp = (opt?: MicroAppContainerInitOptions) => {
+const createMicroApp = async (opt?: MicroAppContainerInitOptions): Promise<MicroAppContainerResult> => {
   if (!opt) opt = {}
-
-  const containerRes = createContainer({ type: 'microApp', ...opt })
+  const containerRes = await createContainer({ type: 'microApp', ...opt })
   autoSyncRouter()
-  return { ...containerRes }
+  return containerRes
 }
 
 export { createMicroApp }

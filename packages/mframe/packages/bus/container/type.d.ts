@@ -68,6 +68,24 @@ export type ContainerInitOptions = {
   autoClearBackground?: Boolean
 }
 
+/** 容器初始化方法的结果 */
+export type ContainerResult = {
+  /** 顶部导航的挂载节点 */
+  navDom: HTMLDivElement
+
+  /** 左侧菜单的挂载节点 */
+  menuDom: HTMLDivElement
+
+  /** tab标签栏的挂载节点 */
+  tabDom: HTMLDivElement
+
+  /** 内容区的挂载节点 */
+  mountDom: HTMLDivElement
+}
+
+/** 子应用容器初始化方法的结果 */
+export type MicroAppContainerResult = Pick<ContainerResult, 'mountDom'>
+
 /** 主应用的初始化配置 */
 export type MainAppContainerInitOptions = Omit<ContainerInitOptions, 'type' | 'autoClearBackground'>
 

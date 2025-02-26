@@ -12,5 +12,6 @@ const app = createApp(App)
 app.use(router)
 app.use(elementPlus)
 
-const { mountDom } = createMainApp({ router })
-app.mount(mountDom!)
+createMainApp({ router }).then((res) => {
+  app.mount(res.mountDom!)
+})

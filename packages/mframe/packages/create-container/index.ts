@@ -1,10 +1,9 @@
-import { h, render } from 'vue'
+import { h, render, ref, watch } from 'vue'
 import { bus } from '@dimple-smile/mframe'
 import Container from './container.vue'
 
-import type { ContainerInitOptions } from '../bus/container/type'
+import type { ContainerInitOptions, ContainerResult } from '../bus/container/type'
 
-const prefix = `dimple-smile-mframe-container-`
 function clearBackground(element: HTMLElement) {
   // 获取计算后的样式
   const removedStyleKeys = [
@@ -32,7 +31,7 @@ function clearBackground(element: HTMLElement) {
   return removedStyles
 }
 
-const createContainer = (opt?: ContainerInitOptions) => {
+const createContainer = async (opt?: ContainerInitOptions): Promise<ContainerResult> => {
   const { appendTo = '#app', type, autoClearBackground } = opt || {}
 
   const isMicroApp = type === 'microApp'
@@ -52,25 +51,19 @@ const createContainer = (opt?: ContainerInitOptions) => {
     Object.assign(clearBackgroundStyles, clearBackground(appendToDom))
   }
 
-  const mountTeleportId = `${prefix}-mount-${new Date().getTime()}`
-  const navTeleportId = `${prefix}-nav-${new Date().getTime()}`
-  const menuTeleportId = `${prefix}-menu-${new Date().getTime()}`
-  const tabTeleportId = `${prefix}-tab-${new Date().getTime()}`
+  const loading = ref(true)
+  let result = {}
   const vnode = h(Container, {
     type,
-    mountTeleportId,
-    navTeleportId,
-    menuTeleportId,
-    tabTeleportId,
     clearBackgroundStyles,
+    onLayoutMounted: (teleportDoms) => {
+      result = teleportDoms
+      loading.value = false
+    },
   })
   render(vnode, appendToDom)
-  return {
-    mountDom: document.getElementById(mountTeleportId),
-    navDom: document.getElementById(navTeleportId),
-    menuDom: document.getElementById(menuTeleportId),
-    tabDom: document.getElementById(tabTeleportId),
-  }
+  await new Promise((res) => watch(() => loading.value, res))
+  return result as ContainerResult
 }
 
 export { createContainer }

@@ -1,8 +1,7 @@
 import mitt from 'mitt'
-
 import { generateChannelData } from '../generator'
 
-import type { MicroAppItem, MicroAppStatus, MenuItem, NavItem, TabItem, ContainerInitOptions } from './type'
+import type { MicroAppItem, MenuItem, NavItem, TabItem, ContainerInitOptions } from './type'
 
 const channelName = 'container'
 

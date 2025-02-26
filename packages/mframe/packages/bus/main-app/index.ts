@@ -1,4 +1,3 @@
-import { reactive } from 'vue'
 import * as postRobot from 'post-robot'
 import mitt from 'mitt'
 import { generateChannelData } from '../generator'
@@ -29,10 +28,11 @@ const sendToChild = async (microAppName: string, key: ChildernListener, data?: a
 
 const channelName = 'mainApp'
 
-const channelData = reactive({})
+const channelData = {}
+const channelItemData = generateChannelData<typeof channelData>(channelName, channelData)
 
 const channelItem = {
-  data: generateChannelData<typeof channelData>(channelName, channelData),
+  data: channelItemData,
   cors: {
     send: sendToChild,
     on: (name: ParentListener, opt1: any, opt2?: any) => postRobot.on(name, opt1, opt2),

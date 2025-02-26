@@ -7,10 +7,6 @@ type ChildernListener = 'layoutDataChange' | 'syncRouter'
 
 const channelName = 'microApp'
 
-const channelData = {
-  appInfo: {} as MicroAppItem,
-}
-
 const sendToParent = async (key: ParentListener, data?: any) => {
   return postRobot
     .send(window.parent, key, data)
@@ -18,8 +14,13 @@ const sendToParent = async (key: ParentListener, data?: any) => {
     .catch((err) => [err, null])
 }
 
+const channelData = {
+  appInfo: {} as MicroAppItem,
+}
+const channelItemData = generateChannelData<typeof channelData>(channelName, channelData)
+
 const channelItem = {
-  data: generateChannelData<typeof channelData>(channelName, channelData),
+  data: channelItemData,
   cors: {
     send: sendToParent,
     on: (name: ChildernListener, opt1?: any, opt2?: any) => postRobot.on(name, opt1, opt2),

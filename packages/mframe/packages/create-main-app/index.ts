@@ -1,13 +1,12 @@
 import { ref } from 'vue'
-import { createContainer, bus, useIframeManager } from '@dimple-smile/mframe'
-import { useRouterEventListener, useRouter } from '../router'
+import { bus, createContainer, useIframeManager, useRouterEventListener, useRouter } from '@dimple-smile/mframe'
 
-import type { MainAppContainerInitOptions } from '../bus/container/type'
+import type { MainAppContainerInitOptions, ContainerResult } from '../bus/container/type'
 
-const createMainApp = (opt?: MainAppContainerInitOptions) => {
+const createMainApp = async (opt?: MainAppContainerInitOptions): Promise<ContainerResult> => {
   if (!opt) opt = {}
   const { microApps = [] } = opt
-  const containerRes = createContainer({ type: 'mainApp', ...opt })
+  const containerRes = await createContainer({ type: 'mainApp', ...opt })
   const containerBus = bus('container')
   const mainAppBus = bus('mainApp')
   const { addRouterEventListener } = useRouterEventListener()
@@ -110,7 +109,7 @@ const createMainApp = (opt?: MainAppContainerInitOptions) => {
 
   addRouterEventListener(['replaceState'], handleReplaceState)
 
-  return { ...containerRes }
+  return containerRes
 }
 
 export { createMainApp }
