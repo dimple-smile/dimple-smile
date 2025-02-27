@@ -6,7 +6,11 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
+    "noUncheckedSideEffectImports": true,
+    "baseUrl": ".",
+    "paths": {
+      "post-robot": ["node_modules/post-robot"]
+    }
   },
   "include": ["packages/**/*.ts", "packages/**/*.tsx", "packages/**/*.vue"]
 }

@@ -4,7 +4,15 @@ import dts from 'vite-plugin-dts'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [vue(), dts({ rollupTypes: true, tsconfigPath: './tsconfig.app.json' })],
+  root: '.',
+  plugins: [
+    vue(),
+    dts({
+      rollupTypes: true,
+      tsconfigPath: './tsconfig.app.json',
+      copyDtsFiles: true,
+    }),
+  ],
   build: {
     lib: {
       entry: 'packages/index.ts',
