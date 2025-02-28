@@ -62,7 +62,7 @@ const createContainer = async (opt?: ContainerInitOptions): Promise<ContainerRes
     },
   })
   render(vnode, appendToDom)
-  await new Promise((res) => watch(() => loading.value, res))
+  if (loading.value) await new Promise((res) => watch(() => loading.value, res))
   return result as ContainerResult
 }
 

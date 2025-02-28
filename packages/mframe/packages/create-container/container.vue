@@ -43,7 +43,7 @@
       </main>
     </section>
 
-    <template v-if="isMainApp && microApps.length">
+    <template v-if="isMainApp">
       <div ref="microAppContainerRef" name="mframe-micro-app-container" :style="microAppsContainerStyle"></div>
     </template>
   </div>
@@ -161,6 +161,8 @@ const handleMouseEvent = (
     }
 
     if (isMicroApp.value) {
+      console.log(event, eventType, target)
+      console.log(checkLayoutHasUsefulDom())
       if (checkLayoutHasUsefulDom()) return
       microAppBus.cors.send('microAppStickStatus', target === 'mount')
     }
@@ -168,7 +170,7 @@ const handleMouseEvent = (
 
   if (eventType === 'mousemove') {
     if (isMicroApp.value) {
-      if (checkLayoutHasUsefulDom()) return
+      console.log(checkLayoutHasUsefulDom())
       microAppBus.cors.send('microAppStickStatus', target === 'mount')
     }
   }
@@ -194,6 +196,7 @@ watch(
 const microAppsContainerStyle = computed<CSSProperties>(() => {
   let resStyle: CSSProperties = {
     ...(props.microAppsContainerStyle || {}),
+    display: microApps.value?.length && activeMicroAppName.value ? 'block' : 'none',
     position: 'absolute',
     zIndex: microAppContainerLoading.value ? -1 : 1,
     top: 0,
@@ -201,7 +204,9 @@ const microAppsContainerStyle = computed<CSSProperties>(() => {
     height: '100%',
     width: '100%',
   }
-  if (isMainApp.value) resStyle.pointerEvents = data.value.microAppStickStatus ? 'all' : 'none'
+  if (isMainApp.value) {
+    resStyle.pointerEvents = data.value.microAppStickStatus && activeMicroAppName.value ? 'all' : 'none'
+  }
   return resStyle
 })
 
@@ -263,7 +268,9 @@ if (isMicroApp.value) {
     iframeData = JSON.parse(window.name)
   } catch {}
   const { appInfo, parentData = {} } = iframeData
-  containerBus.data.set(parentData.layoutData)
+  setTimeout(() => {
+    containerBus.data.set(parentData.layoutData)
+  }, 0)
   microAppBus.data.set({ appInfo })
   microAppBus.cors.on('layoutDataChange', (e: any) => {
     containerBus.data.set(e.data)
