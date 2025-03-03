@@ -127,6 +127,7 @@ const checkLayoutHasUsefulDom = () => {
       layoutDomRefs.menu.value,
       layoutDomRefs.nav.value,
       layoutDomRefs.tab.value,
+      teleportDomRefs.mount.value,
     ]
     for (let x = startX; x <= endX; x += step) {
       for (let y = startY; y <= endY; y += step) {
@@ -153,7 +154,6 @@ const handleMouseEvent = (
   if (mouseEventPoint.x === event.x && mouseEventPoint.y === event.y) return
   mouseEventPoint.x = event.x
   mouseEventPoint.y = event.x
-
   if (eventType === 'mouseenter') {
     if (isMainApp.value) {
       if (!activeMicroAppName.value) {
