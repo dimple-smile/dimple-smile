@@ -156,21 +156,21 @@ const handleMouseEvent = (
 
   if (eventType === 'mouseenter') {
     if (isMainApp.value) {
-      if (!activeMicroAppName.value) return
+      if (!activeMicroAppName.value) {
+        return containerBus.data.set({ microAppStickStatus: false })
+      }
       containerBus.data.set({ microAppStickStatus: target === 'mount' })
     }
 
     if (isMicroApp.value) {
-      console.log(event, eventType, target)
-      console.log(checkLayoutHasUsefulDom())
-      if (checkLayoutHasUsefulDom()) return
+      if (checkLayoutHasUsefulDom()) return microAppBus.cors.send('microAppStickStatus', true)
       microAppBus.cors.send('microAppStickStatus', target === 'mount')
     }
   }
 
   if (eventType === 'mousemove') {
     if (isMicroApp.value) {
-      console.log(checkLayoutHasUsefulDom())
+      if (checkLayoutHasUsefulDom()) return microAppBus.cors.send('microAppStickStatus', true)
       microAppBus.cors.send('microAppStickStatus', target === 'mount')
     }
   }

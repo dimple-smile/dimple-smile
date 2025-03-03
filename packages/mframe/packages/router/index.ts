@@ -1,13 +1,9 @@
-import Navigo from 'navigo'
 import { bus } from '@dimple-smile/mframe'
+import picomatch from 'picomatch'
 
 import { initHistoryCustomEvent } from './history'
 
-import type { Match } from 'navigo'
-
-const router = new Navigo('/')
-
-const syncRouter = (cb: (params: { appInfo: any; route: Match; parentRouter: any; replacePath: string }) => any) => {
+const syncRouter = (cb: (params: { appInfo: any; parentRouter: any; replacePath: string }) => any) => {
   const microAppBus = bus('microApp')
   microAppBus.cors.on('syncRouter', (e: any) => cb(e.data))
 }
@@ -19,6 +15,7 @@ const reportRouter = async (data?: any) => {
   microAppBus.cors.send('reportRouter', { data, href: location.href, appInfo })
 }
 
+const routerRules = new Map()
 const useRouter = () => {
   const replaceState = (path: string) => {
     window.history.replaceState(history.state, '', path)
@@ -32,10 +29,14 @@ const useRouter = () => {
 
   return {
     replaceState,
-    resolve: router.resolve,
-    on: router.on,
-    match: router.match,
-    getCurrentLocation: router.getCurrentLocation,
+    addRule: (key: string, globString: string) => {
+      routerRules.set(key, picomatch(globString))
+    },
+    match: (path: string) => {
+      const matchItem = [...routerRules].find(([_, rule]) => rule(path))
+      if (!matchItem) return false
+      return matchItem[0]
+    },
   }
 }
 

@@ -7,6 +7,8 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
+    "esModuleInterop":true,
+    "downlevelIteration":true,
     "baseUrl": ".",
     "paths": {
       "post-robot": ["node_modules/post-robot"]

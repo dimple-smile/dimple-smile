@@ -40,7 +40,7 @@ export type MicroAppItem = {
   /** 子应用来源（协议、主机、端口） */
   origin: string
 
-  /** 子应用路由激活的规则，唯一规则（注意不要和其他应用存在包含关系）。支持如 /app1/* 这种glob语法 */
+  /** 子应用路由激活的规则，唯一规则（注意不要和其他应用存在包含关系）。支持如 glob 语法，使用 picomatch 来匹配 */
   activeRule: string
 
   /** 作为子应用时，是否自动清除html、body、挂载点的背景颜色。默认清除，防止子应用的背景颜色覆盖主应用，但是会自动继到可用的布局容器中 */
@@ -48,6 +48,8 @@ export type MicroAppItem = {
 
   /** 路由配置 */
   router?: RouterConfig
+
+  [key: string]: any
 }
 
 /** 容器的初始化配置 */

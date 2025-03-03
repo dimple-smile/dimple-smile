@@ -21,7 +21,7 @@ const createMainApp = async (opt?: MainAppContainerInitOptions): Promise<Contain
   microApps
     .filter((item: any) => item.activeRule)
     .map((item: any) => {
-      router.on(item.activeRule, () => {})
+      router.addRule(item.name, item.activeRule)
       registerIframe(item.name, item)
     })
 
@@ -62,7 +62,6 @@ const createMainApp = async (opt?: MainAppContainerInitOptions): Promise<Contain
     if (matchMicroAppItem.router?.mode === 'hash') replacePath = `/#${path}`
     mainAppBus.cors.send(matchMicroAppItem.name, 'syncRouter', {
       appInfo: matchMicroAppItem,
-      route: router.getCurrentLocation(),
       parentRouter: parentRouter,
       replacePath,
     })
@@ -79,7 +78,7 @@ const createMainApp = async (opt?: MainAppContainerInitOptions): Promise<Contain
     const routeMatch = router.match(path)
     const matchMicroAppItem = microAppsData.value.find((item) => {
       if (!routeMatch) return false
-      return `/${routeMatch[0].route.name}` === item.activeRule
+      return routeMatch === item.name
     })
     let replacePath = path
     if (matchMicroAppItem?.router?.mode === 'hash') replacePath = `/#${path}`

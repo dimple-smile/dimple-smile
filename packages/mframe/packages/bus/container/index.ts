@@ -7,22 +7,22 @@ const channelName = 'container'
 
 const channelData = {
   /** 整个容器是否显示，默认为true，包括内容区域 */
-  visible: undefined,
+  visible: undefined as boolean | undefined,
 
   /** 外框是否显示，默认为true，外框包括顶部导航栏，左侧菜单栏，tab标签栏 */
-  frameVisible: undefined,
+  frameVisible: undefined as boolean | undefined,
 
   /** 外框的顶部导航栏是否显示，默认为true，单独设置此项优先级高于frameVisible */
-  navVisible: undefined,
+  navVisible: undefined as boolean | undefined,
 
   /** 外框的左侧菜单栏是否显示，默认为true，单独设置此项优先级高于frameVisible */
-  menuVisible: undefined,
+  menuVisible: undefined as boolean | undefined,
 
   /** 外框的tab标签栏是否显示，默认为true，单独设置此项优先级高于frameVisible */
-  tabVisible: undefined,
+  tabVisible: undefined as boolean | undefined,
 
   /** 内容区是否显示，默认为true，单独设置此项优先级高于visible */
-  mountVisible: undefined,
+  mountVisible: undefined as boolean | undefined,
 
   /** 子应用列表 */
   microApps: [] as MicroAppItem[],
@@ -31,19 +31,19 @@ const channelData = {
   activeMicroAppName: '',
 
   /** 当前激活的子应用信息 */
-  activeMicroAppItem: null,
+  activeMicroAppItem: null as null | MicroAppItem,
 
   /** 顶部导航菜单项列表 */
   navItems: [] as NavItem[],
 
   /** 当前激活的顶部导航菜单项 */
-  activeNavItem: null,
+  activeNavItem: null as null | NavItem,
 
   /** 左侧菜单项列表 */
   menuItems: [] as MenuItem[],
 
   /** 当前激活左侧菜单项 */
-  activeMenuItem: null,
+  activeMenuItem: null as null | MenuItem,
 
   /** 全量导航菜单项 */
   fullNavItems: [] as NavItem[],
@@ -52,7 +52,7 @@ const channelData = {
   tabItems: [] as TabItem[],
 
   /** 当前激活的标签内容项 */
-  activeTabItem: null,
+  activeTabItem: null as null | TabItem,
 
   /** nav的BoundingClientRect信息 */
   navRect: { x: 0, y: 0, height: 0, width: 0 },
