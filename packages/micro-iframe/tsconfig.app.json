@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "lib": ["ES2023", "ES2015", "ES2020", "DOM"],
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true,
+    "esModuleInterop":true,
+    "downlevelIteration":true,
+    "baseUrl": ".",
+  },
+  "include": ["packages/**/*.ts", "packages/**/*.tsx", "packages/**/*.vue"]
+}

@@ -1,3 +1,0 @@
-const createEditor = () => {}
-
-export { createEditor }

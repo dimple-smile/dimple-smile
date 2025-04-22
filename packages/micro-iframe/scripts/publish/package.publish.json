@@ -1,0 +1,11 @@
+{
+  "name": "@dimple-smile/micro-iframe",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  }
+}

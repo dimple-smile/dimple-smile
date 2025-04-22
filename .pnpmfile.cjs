@@ -1,5 +1,5 @@
 function readPackage(pkg, context) {
-  const lockPackages = { dayjs: '1.11.10', '@dimple-smile/mframe': 'workspace:*' }
+  const lockPackages = { '@dimple-smile/micro-iframe': 'workspace:*' }
 
   Object.keys(pkg.dependencies)
     .filter((key) => lockPackages[key] && pkg.dependencies && pkg.dependencies[key])
