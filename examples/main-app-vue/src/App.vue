@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import {bus} from '@dimple-smile/mframe';
-
-const containerBus = bus('container')
+import Layout from './components/layout/index.vue'
 </script>
 
 <template>
-  <router-view></router-view>
+  <Layout>
+    <router-view></router-view>
+  </Layout>
 </template>
 
 <style>

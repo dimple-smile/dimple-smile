@@ -33,6 +33,7 @@ const openMessage = () => {
     showClose: true,
     message: 'Congrats, this is a success message.',
     type: 'success',
+    duration: 0,
   })
 }
 
@@ -45,6 +46,7 @@ const openNotification = () => {
     title: 'Success',
     message: 'This is a success message',
     type: 'success',
+    duration: 0,
   })
 }
 

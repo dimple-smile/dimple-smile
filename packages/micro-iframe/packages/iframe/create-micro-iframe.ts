@@ -10,58 +10,48 @@ const createMicroIframe = (options: CreateMicroIframeOptions) => {
   const { rootTarget, mainTarget, info } = options || {}
   const { id, origin } = info || {}
 
+  // State management
   let element: ReturnType<typeof createElement> | null = null
-  const event = createEvent<{
-    [key in IframeLifeCycleKey]: any
-  }>()
   let messageChannel: MessageChannel | null = null
-  let messageListeners: { key: string; callback: (data: any) => any }[] = []
-
-  const status: {
-    value: IframeLifeCycleKey
-    set: (payload: IframeLifeCycleKey) => void
-    is: (payload: IframeLifeCycleKey | IframeLifeCycleKey[]) => boolean
-  } = {
-    value: 'registered',
-    set: (value) => {
-      event.emit(value, { newValue: value, oldValue: status.value })
-      status.value = value
-      element?.setAttribute({ 'data-mi-status': value })
+  let loadingPath: string | undefined = ''
+  
+  const event = createEvent<{ [key in IframeLifeCycleKey]: any }>()
+  const messageListeners = new Map<string, Set<(data: any) => any>>()
+  const currentOrigin = new URL(origin, window.location.origin).origin
+  
+  const status = {
+    value: 'registered' as IframeLifeCycleKey,
+    set: (newValue: IframeLifeCycleKey) => {
+      const oldValue = status.value
+      status.value = newValue
+      event.emit(newValue, { newValue, oldValue })
+      element?.setAttribute({ 'data-mi-status': newValue })
     },
-    is: (value) => {
-      if (Array.isArray(value)) return value.includes(status.value as IframeLifeCycleKey)
-      return status.value === value
-    },
+    is: (value: IframeLifeCycleKey | IframeLifeCycleKey[]) => 
+      Array.isArray(value) ? value.includes(status.value) : status.value === value,
   }
 
-  /** 加载过程中如果改变path并且还在当前iframe的activeRule内，加载完成后需要同步最近一次的path */
-  let loadingPath: string | undefined = ''
+  // Helper functions
+  const getIframePath = (path?: string) => 
+    info.routerConfig?.mode === 'hash' ? `/#${path}` : path
 
-  const load = async (path?: string): Promise<Error | undefined> => {
-    if (info.routerConfig?.mode === 'hash') path = `/#${path}`
+  const syncIframe = (path?: string) => {
+    const position = getRelativePosition(rootTarget, mainTarget)
+    element?.setAttribute({ 'data-mi-path': path })
+    postMessage('syncPosition', position)
+    postMessage('syncPath', path)
+  }
 
-    if (status.is('loading')) {
-      loadingPath = path
-      return
-    }
+  const cleanup = () => {
+    element?.target && rootTarget!.removeChild(element.target)
+    messageChannel = null
+    messageListeners.clear()
+  }
 
-    if (status.is('error')) return
-
-    if (status.is(['activated', 'deactivated'])) {
-      status.set('activated')
-      element?.setVisible(true)
-      element?.setAttribute({ 'data-mi-path': path })
-      postMessage('syncPosition', getRelativePosition(rootTarget, mainTarget))
-      postMessage('syncPath', path)
-      return
-    }
-
-    status.set('loading')
-
-    const currentOrigin = new URL(origin, window.location.origin).origin
-    const src = currentOrigin + path || ''
-
-    element = createElement('iframe', {
+  const createIframeElement = (path?: string) => {
+    const src = currentOrigin + (path || '')
+    
+    return createElement('iframe', {
       attribute: {
         src,
         id,
@@ -78,29 +68,19 @@ const createMicroIframe = (options: CreateMicroIframeOptions) => {
         pointerEvents: 'none',
         visibility: 'hidden',
         opacity: '0',
-        willChange: 'visibility' /* 启用 GPU 加速 */,
-        // contain: 'strict' /* 限制渲染影响范围 */,
+        willChange: 'visibility',
       },
     })
+  }
 
-    element.insertTo(rootTarget)
-    const [loadError, loadEvent] = await new Promise<[null | Error, null | Event]>((resolve) => {
-      element!.target!.onload = (e) => resolve([null, e])
-      element!.target!.onerror = () => resolve([new Error(`${id} IFrame load failed`), null])
-    })
-    if (loadError) {
-      status.set('error')
-      rootTarget!.removeChild(element.target)
-      return loadError
-    }
-
-    const iframeTarget = loadEvent?.target as HTMLIFrameElement | null
-
+  const setupMessageChannel = (iframeTarget: HTMLIFrameElement) => {
     messageChannel = new MessageChannel()
 
-    iframeTarget?.contentWindow?.postMessage?.({ key: iframeConfig.connectKey, data: info }, currentOrigin, [
-      messageChannel.port2,
-    ])
+    iframeTarget.contentWindow?.postMessage(
+      { key: iframeConfig.connectKey, data: info }, 
+      currentOrigin, 
+      [messageChannel.port2]
+    )
 
     messageChannel.port1.start()
     messageChannel.port2.start()
@@ -108,74 +88,101 @@ const createMicroIframe = (options: CreateMicroIframeOptions) => {
     messageChannel.port1.addEventListener('message', (e) => {
       const { key, data } = e.data
       if (!status.is('activated')) return
-      messageListeners.map((item) => {
-        if (item.key === key) item.callback(data)
-      })
+      messageListeners.get(key)?.forEach(callback => callback(data))
     })
+  }
 
-    const contentLoadError = await new Promise<null | Error>((resolve) => {
-      const sto = setTimeout(
-        () => resolve(new Error(`${id} IFrame load timeout`)),
+  const waitForIframeReady = () => 
+    new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(
+        () => reject(new Error(`${id} IFrame load timeout`)),
         info.timeout ?? iframeConfig.iframeLoadTimeout,
       )
 
       messageChannel?.port1.addEventListener('message', (e) => {
-        const { key } = e.data
-        if (key === 'load') {
-          resolve(null)
-          clearTimeout(sto)
+        if (e.data.key === 'load') {
+          clearTimeout(timeout)
+          resolve()
         }
       })
     })
 
-    if (contentLoadError) {
-      status.set('error')
-      rootTarget!.removeChild(element.target)
-      return contentLoadError
+  const handleError = (error: Error) => {
+    status.set('error')
+    cleanup()
+    throw error
+  }
+
+  const load = async (path?: string): Promise<void> => {
+    path = getIframePath(path)
+
+    if (status.is('loading')) {
+      loadingPath = path
+      return
     }
 
-    status.set('activated')
-    element.setVisible(true)
-    element?.setAttribute({ 'data-mi-path': path })
-    if (loadingPath) {
-      postMessage('syncPath', loadingPath)
-      element?.setAttribute({ 'data-mi-path': loadingPath })
+    if (status.is('error')) return
+
+    if (status.is(['activated', 'deactivated'])) {
+      status.set('activated')
+      element?.setVisible(true)
+      syncIframe(path)
+      return
     }
-    postMessage('syncPosition', getRelativePosition(rootTarget, mainTarget))
-    onMessage('asyncPointerEvents', setPointerEvents)
-    onMessage('syncRootClick', (e) => {
-      const { x, y } = e
-      const elements = document.elementsFromPoint(x, y)
-      let targetElement = elements[0] as HTMLElement
-      if (targetElement === iframeTarget) targetElement = elements[1] as HTMLElement
-      targetElement?.click?.()
-    })
+
+    try {
+      status.set('loading')
+      
+      element = createIframeElement(path)
+      element.insertTo(rootTarget)
+      
+      const iframeTarget = await new Promise<HTMLIFrameElement>((resolve, reject) => {
+        element!.target!.onload = (e) => resolve(e.target as HTMLIFrameElement)
+        element!.target!.onerror = () => reject(new Error(`${id} IFrame load failed`))
+      })
+
+      setupMessageChannel(iframeTarget)
+      await waitForIframeReady()
+
+      status.set('activated')
+      element.setVisible(true)
+      syncIframe(loadingPath || path)
+      
+      onMessage('asyncPointerEvents', setPointerEvents)
+      onMessage('syncRootClick', ({ x, y }) => {
+        const elements = document.elementsFromPoint(x, y)
+        const targetElement = elements[0] === iframeTarget ? elements[1] : elements[0]
+        ;(targetElement as HTMLElement)?.click?.()
+      })
+    } catch (error) {
+      handleError(error as Error)
+    }
   }
 
   const hide = () => {
+    if (!element || status.is('destroy')) return
     status.set('deactivated')
-    element!.setPointerEvents(false)
-    element!.setVisible(false)
+    element.setPointerEvents(false)
+    element.setVisible(false)
   }
 
   const destroy = () => {
     if (status.is('destroy')) return
     element?.setVisible(false)
     element?.setPointerEvents(false)
-    rootTarget!.removeChild(element?.target!)
-    messageChannel = null
-    messageListeners = []
+    cleanup()
     status.set('destroy')
   }
 
   const postMessage = (key: string, data: any) => {
-    if (!status.is('activated')) return
-    messageChannel?.port1.postMessage({ key, data })
+    if (!status.is('activated') || !messageChannel) return
+    messageChannel.port1.postMessage({ key, data })
   }
 
   const onMessage = (key: string, callback: (data: any) => any) => {
-    messageListeners.push({ key, callback })
-    return () => (messageListeners = messageListeners.filter((item) => item.callback !== callback))
+    if (!messageListeners.has(key)) messageListeners.set(key, new Set())
+    messageListeners.get(key)!.add(callback)
+    return () => messageListeners.get(key)?.delete(callback)
   }
 
   const setPointerEvents = (value: boolean) => element?.setPointerEvents(value)

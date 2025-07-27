@@ -14,12 +14,12 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { bus } from '@dimple-smile/mframe'
+import { useRouter } from 'vue-router'
 
-const containerBus = bus('container')
+const router = useRouter()
 
 const handleClick = (path: string) => {
-  containerBus.event.emit('menuItemClick', { path })
+  router.push(path)
 }
 const visible = ref(true)
 
